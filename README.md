@@ -68,7 +68,7 @@ This toolkit requires released manifests and periorbital measurement metadata.
 Download the heavy files here:
 
 ```text
-TODO: add anonymous Google Drive download link
+https://drive.google.com/drive/folders/1U3T6b5vY-ddJLjdrEDZ169OHI-VFQPc5?usp=drive_link
 ```
 
 Place or extract them so the repository contains:
