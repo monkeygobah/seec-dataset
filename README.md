@@ -1,10 +1,10 @@
 # SEEC-DATASET Reconstruction Toolkit
 
-This repository reconstructs the SEEC/UIC-EYE periocular image subsets from locally held source face datasets.
+This repository reconstructs the SEEC image subsets from local face datasets.
 
 The repository does **not** include original face images or derived cropped image files. Users must obtain the source datasets independently, confirm that they have permission to use them, and arrange them in the expected folder structure before running the scripts.
 
-The reconstruction scripts replay released manifests and metadata. They do **not** rerun CNN filtering, MediaPipe landmark detection, or periorbital distance prediction.
+The reconstruction operates using released manifests and metadata. They do **not** rerun CNN filtering, MediaPipe landmark detection, or periorbital distance prediction described in the papers.
 
 ## 1. Install Requirements
 
@@ -68,7 +68,7 @@ This toolkit requires released manifests and periorbital measurement metadata.
 Download the heavy files here:
 
 ```text
-https://drive.google.com/drive/folders/1U3T6b5vY-ddJLjdrEDZ169OHI-VFQPc5?usp=drive_link
+[https://drive.google.com/drive/folders/1U3T6b5vY-ddJLjdrEDZ169OHI-VFQPc5?usp=drive_link](https://drive.google.com/file/d/1nkO4BrKuK3BiTK6PA_bHB7ph8fECHU0g/view?usp=drive_link)
 ```
 
 Place or extract them so the repository contains:
