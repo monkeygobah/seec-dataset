@@ -33,7 +33,7 @@ Download the source datasets from their original providers and follow each provi
 | UMDFaces (Still Images) | https://www.kaggle.com/datasets/meln1337/faces-umd |
 | Face Images with Marked Landmark Points | https://www.kaggle.com/datasets/drgilermo/face-images-with-marked-landmark-points |
 | FEI Face Database | https://fei.edu.br/~cet/facedatabase.html |
-| MORPH (Academic) | https://uncw.edu/research/innovation/commercialization/technology-portfolio/morph |
+| MORPH (Academic) | https://omen.cs.uni-magdeburg.de/disclaimer/index.php|
 
 ## 3. Arrange Source Images
 
