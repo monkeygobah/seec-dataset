@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+message: "If you use this reconstruction toolkit, please cite the associated SEEC-DATASET/UIC-EYE-4M paper."
+title: "SEEC-DATASET Reconstruction Toolkit"
+authors:
+  - family-names: "SEEC-DATASET Authors"
+version: "0.1.0"
+
