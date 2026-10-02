@@ -14,7 +14,7 @@ pip install -r requirements.txt
 
 ## 2. Download the reconstruction manifests
 
-Download the [current manifest archive](https://drive.google.com/file/d/1nkO4BrKuK3BiTK6PA_bHB7ph8fECHU0g/view?usp=drive_link). This is the current external distribution location, not a permanent archival reference.
+Download the [current manifest archives](https://drive.google.com/file/d/1nkO4BrKuK3BiTK6PA_bHB7ph8fECHU0g/view?usp=drive_link). 
 
 Extract the archive's `manifests/`, `metadata/`, and `tables/` folders **into this repository's `data/` directory**:
 
