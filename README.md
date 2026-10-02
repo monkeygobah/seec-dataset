@@ -81,7 +81,7 @@ Inspect the CSV build report for each selected dataset:
 | `missing_manifest` | Required joining records unavailable |
 | `failed` | Other reconstruction or write errors |
 
-A completed build has zero missing/failed counts and `written + skipped = expected`. Skipped files are not revalidated. Missing archive files can stop a command before a report is produced; a command finishing does not guarantee a complete build.
+A completed build has zero missing/failed counts and `written + skipped = expected`. Skipped files are not revalidated. See [Reconstruction Fidelity](RECONSTRUCTION_FIDELITY.md) for historical JPEG replay and golden regression checks. Missing archive files can stop a command before a report is produced; a command finishing does not guarantee a complete build.
 
 Use the canonical [SEEC benchmark Quickstart](https://github.com/monkeygobah/seec-benchmark/blob/main/QUICKSTART.md) and its `scripts/prepare_benchmark_layout.py` to prepare reconstructed SUBSET_6/7 for the fixed benchmark manifests. Partial reconstruction may not satisfy every benchmark entry; do not regenerate fixed splits.
 
