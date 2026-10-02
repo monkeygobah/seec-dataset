@@ -33,6 +33,6 @@ Follow each provider's license, access, and citation requirements. Use alignment
 
 ## Intended use and identifiability
 
-SEEC supports external-eye/periocular representation-learning research and benchmarking. It is not intended for face recognition or identity verification. Cropping reduces but does not eliminate identifiability.
+SEEC supports external-eye/periocular representation-learning research and benchmarking. It is not intended for face recognition or identity verification.
 
 Clinical results are research benchmark results, not deployment-ready clinical validation. Legacy SUBSET_4 measurement pseudolabels are experimental and outside the submitted benchmark.
