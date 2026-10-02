@@ -9,6 +9,7 @@ from .replay import (
     MissingSourceError,
     _add,
     copy_metadata,
+    jpeg_roundtrip,
     load_s1_records,
     load_s3_records,
     load_split_rows,
@@ -27,7 +28,8 @@ from .replay import (
 class _CropCache:
     """Keep only the most recent bilateral crop; close it on eviction or exit."""
 
-    def __init__(self):
+    def __init__(self, replay_jpeg_stages=False):
+        self.replay_jpeg_stages = replay_jpeg_stages
         self.key = None
         self.image = None
 
@@ -46,7 +48,12 @@ class _CropCache:
     def get(self, key, subset0, s1_row, s3_row):
         if key != self.key:
             self.close()
-            self.image = replay_bilateral_crop(subset0, s1_row, s3_row)
+            if self.replay_jpeg_stages:
+                self.image = replay_bilateral_crop(
+                    subset0, s1_row, s3_row, replay_jpeg_stages=True,
+                )
+            else:
+                self.image = replay_bilateral_crop(subset0, s1_row, s3_row)
             self.key = key
         return self.image
 
@@ -157,7 +164,7 @@ def build_resized_subset(
     out_subset = "SUBSET_6" if subset == "S6" else "SUBSET_7"
     rel_col = "s6_rel" if subset == "S6" else "s7_rel"
 
-    with _CropCache() as crop_cache:
+    with _CropCache(replay_jpeg_stages=True) as crop_cache:
         for row in targets:
             dst = out / out_subset / dataset / normalize_rel(row[rel_col])
             if dst.is_file() and not overwrite:
@@ -181,7 +188,9 @@ def build_resized_subset(
                 crop_key = normalize_rel(split_row["rel_src"])
                 crop = crop_cache.get(crop_key, subset0, s1_row, s3_row)
                 with split_eye(crop, side, int(split_row.get("mid") or -1)) as eye:
-                    written = save_square_jpeg(eye, dst, size, overwrite=overwrite)
+                    # SUBSET_5 was saved with default JPEG settings before resizing.
+                    with jpeg_roundtrip(eye) as unilateral:
+                        written = save_square_jpeg(unilateral, dst, size, overwrite=overwrite)
                 stats = _add(stats, **{"written" if written else "skipped": 1})
             except MissingSourceError:
                 stats = _add(stats, missing_source=1)

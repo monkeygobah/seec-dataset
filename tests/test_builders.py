@@ -146,9 +146,9 @@ class ReconstructionTests(unittest.TestCase):
                 with self.subTest(subset=subset, fail=fail):
                     live, peak, calls = 0, 0, 0
 
-                    def tracked(*args):
+                    def tracked(*args, **kwargs):
                         nonlocal live, peak, calls
-                        image = original(*args)
+                        image = original(*args, **kwargs)
                         live += 1
                         peak = max(peak, live)
                         calls += 1
@@ -181,7 +181,8 @@ class ReconstructionTests(unittest.TestCase):
                 stats = self.build(subset)
                 self.assertEqual(stats.written, 6)
                 for index, name in enumerate(self.names):
-                    with replay.replay_bilateral_crop(self.source, self.s1[index], self.s3[index]) as crop:
+                    with replay.replay_bilateral_crop(self.source, self.s1[index], self.s3[index],
+                                                       replay_jpeg_stages=subset in (6, 7)) as crop:
                         for side in ("OD", "OS"):
                             filename = f"{name}_rfc_{side}" + (".jpg" if subset == 5 else f"_{224 if subset == 6 else 512}.jpg")
                             actual = self.out / f"SUBSET_{subset}" / "celeb" / filename
@@ -190,8 +191,35 @@ class ReconstructionTests(unittest.TestCase):
                                 if subset == 5:
                                     replay.save_jpeg(eye, reference, overwrite=True)
                                 else:
-                                    replay.save_square_jpeg(eye, reference, 224 if subset == 6 else 512, overwrite=True)
+                                    with replay.jpeg_roundtrip(eye) as decoded:
+                                        replay.save_square_jpeg(decoded, reference, 224 if subset == 6 else 512, overwrite=True)
                             self.assertEqual(actual.read_bytes(), reference.read_bytes())
+
+    def test_jpeg_roundtrip_matches_disk_save_reload(self):
+        with Image.open(self.source / "celeb/a.png") as image:
+            for options in ({}, {"quality": 95}, {"quality": 95, "subsampling": 0}):
+                with self.subTest(options=options):
+                    path = self.root / "intermediate.jpg"
+                    image.save(path, **options)
+                    with Image.open(path) as disk, replay.jpeg_roundtrip(image, **options) as memory:
+                        self.assertEqual(disk.convert("RGB").tobytes(), memory.tobytes())
+
+    def test_alignment_override_is_explicit(self):
+        self.assertEqual(replay.ALIGNMENT_JPEG_OVERRIDES, {"fiml": {"subsampling": 0}})
+        for dataset, expected in (("celeb", {"quality": 95}), ("cfd", {"quality": 95}),
+                                  ("ffhq", {"quality": 95}), ("fiml", {"quality": 95, "subsampling": 0})):
+            with self.subTest(dataset=dataset):
+                row = dict(self.s1[0], rel_src=dataset + "/a.png")
+                folder = self.source / dataset
+                folder.mkdir(exist_ok=True)
+                if not (folder / "a.png").exists():
+                    (folder / "a.png").write_bytes((self.source / "celeb/a.png").read_bytes())
+                original = replay.jpeg_roundtrip
+                with patch.object(replay, "jpeg_roundtrip", wraps=original) as encode:
+                    with replay.replay_bilateral_crop(self.source, row, self.s3[0], replay_jpeg_stages=True):
+                        pass
+                self.assertEqual(encode.call_args_list[0].kwargs, expected)
+                self.assertEqual(encode.call_args_list[1].kwargs, {})
 
     def test_report_contains_skipped_and_balanced_counts(self):
         self.build(6)

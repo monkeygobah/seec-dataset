@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from io import BytesIO
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -84,7 +85,27 @@ class MissingSourceError(FileNotFoundError):
     """An original image required for reconstruction is missing."""
 
 
-def replay_bilateral_crop(subset0: Path, s1_row: dict[str, str], s3_row: dict[str, str]) -> Image.Image:
+# The common s0_to_s1.py writer uses quality=95 and Pillow default subsampling.
+# FIML's historical 4:4:4 override is confirmed by the real-data golden fixture.
+ALIGNMENT_JPEG_OVERRIDES = {"fiml": {"subsampling": 0}}
+
+
+def jpeg_roundtrip(image: Image.Image, **options) -> Image.Image:
+    """Replay an intermediate JPEG file without writing it to disk."""
+    with BytesIO() as buffer:
+        image.save(buffer, format="JPEG", **options)
+        buffer.seek(0)
+        with Image.open(buffer) as decoded:
+            return decoded.convert("RGB")
+
+
+def replay_bilateral_crop(
+    subset0: Path,
+    s1_row: dict[str, str],
+    s3_row: dict[str, str],
+    *,
+    replay_jpeg_stages: bool = False,
+) -> Image.Image:
     src = source_image(subset0, s1_row)
     if not src.exists():
         raise MissingSourceError(str(src))
@@ -93,18 +114,20 @@ def replay_bilateral_crop(subset0: Path, s1_row: dict[str, str], s3_row: dict[st
         opened = Image.open(src)
     except FileNotFoundError as exc:
         raise MissingSourceError(str(src)) from exc
-    with opened as img:
-        img = img.convert("RGB")
+    box = tuple(int(float(s3_row[key])) for key in (
+        "crop_x0_used", "crop_y0_used", "crop_x1_used", "crop_y1_used",
+    ))
+    with opened as original, original.convert("RGB") as img:
         angle = -float(s1_row["rot_angle_deg_pil"])
-        rotated = img.rotate(angle, resample=Image.BICUBIC, expand=True)
-
-        box = (
-            int(float(s3_row["crop_x0_used"])),
-            int(float(s3_row["crop_y0_used"])),
-            int(float(s3_row["crop_x1_used"])),
-            int(float(s3_row["crop_y1_used"])),
-        )
-        return rotated.crop(box)
+        with img.rotate(angle, resample=Image.BICUBIC, expand=True) as rotated:
+            if not replay_jpeg_stages:
+                return rotated.crop(box)
+            dataset = normalize_rel(s1_row["rel_src"]).split("/")[0]
+            options = {"quality": 95, **ALIGNMENT_JPEG_OVERRIDES.get(dataset, {})}
+            with jpeg_roundtrip(rotated, **options) as aligned:
+                with aligned.crop(box) as crop:
+                    # The historical crop writer calls image.save(path) without options.
+                    return jpeg_roundtrip(crop)
 
 
 def split_eye(crop: Image.Image, side: str, mid: int | None = None) -> Image.Image:
