@@ -17,6 +17,7 @@ class BuildStats:
     dataset: str
     expected: int = 0
     written: int = 0
+    skipped: int = 0
     missing_source: int = 0
     missing_manifest: int = 0
     failed: int = 0
@@ -79,12 +80,20 @@ def source_image(subset0: Path, s1_row: dict[str, str]) -> Path:
     return subset0 / normalize_rel(s1_row["rel_src"])
 
 
+class MissingSourceError(FileNotFoundError):
+    """An original image required for reconstruction is missing."""
+
+
 def replay_bilateral_crop(subset0: Path, s1_row: dict[str, str], s3_row: dict[str, str]) -> Image.Image:
     src = source_image(subset0, s1_row)
     if not src.exists():
-        raise FileNotFoundError(str(src))
+        raise MissingSourceError(str(src))
 
-    with Image.open(src) as img:
+    try:
+        opened = Image.open(src)
+    except FileNotFoundError as exc:
+        raise MissingSourceError(str(src)) from exc
+    with opened as img:
         img = img.convert("RGB")
         angle = -float(s1_row["rot_angle_deg_pil"])
         rotated = img.rotate(angle, resample=Image.BICUBIC, expand=True)
@@ -109,7 +118,7 @@ def split_eye(crop: Image.Image, side: str, mid: int | None = None) -> Image.Ima
 
 
 def save_jpeg(image: Image.Image, dst: Path, overwrite: bool = False) -> bool:
-    if dst.exists() and not overwrite:
+    if dst.is_file() and not overwrite:
         return False
     ensure_parent(dst)
     image.convert("RGB").save(dst)
@@ -117,7 +126,7 @@ def save_jpeg(image: Image.Image, dst: Path, overwrite: bool = False) -> bool:
 
 
 def save_square_jpeg(image: Image.Image, dst: Path, size: int, overwrite: bool = False) -> bool:
-    if dst.exists() and not overwrite:
+    if dst.is_file() and not overwrite:
         return False
     ensure_parent(dst)
     resized = image.convert("RGB").resize((size, size), resample=RESAMPLE_LANCZOS)
@@ -130,7 +139,7 @@ def write_report(path: Path, rows: Iterable[BuildStats]) -> None:
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["dataset", "expected", "written", "missing_source", "missing_manifest", "failed"],
+            fieldnames=["dataset", "expected", "written", "skipped", "missing_source", "missing_manifest", "failed"],
         )
         writer.writeheader()
         for row in rows:

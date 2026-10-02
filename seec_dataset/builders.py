@@ -6,6 +6,7 @@ from .config import S6_SIZE, S7_SIZE
 from .io import csv_rows, normalize_rel
 from .replay import (
     BuildStats,
+    MissingSourceError,
     _add,
     copy_metadata,
     load_s1_records,
@@ -21,6 +22,33 @@ from .replay import (
     target_s5_relpaths,
     write_report,
 )
+
+
+class _CropCache:
+    """Keep only the most recent bilateral crop; close it on eviction or exit."""
+
+    def __init__(self):
+        self.key = None
+        self.image = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    def close(self):
+        if self.image is not None:
+            self.image.close()
+        self.key = None
+        self.image = None
+
+    def get(self, key, subset0, s1_row, s3_row):
+        if key != self.key:
+            self.close()
+            self.image = replay_bilateral_crop(subset0, s1_row, s3_row)
+            self.key = key
+        return self.image
 
 
 def _prepare_crop_maps(dataset: str, target_rel_rfc: set[str]):
@@ -42,6 +70,10 @@ def build_subset4(dataset: str, subset0: Path, out: Path, overwrite: bool = Fals
 
     for row in metadata_rows(dataset):
         rel_rfc = f"{dataset}/{row['orig_file']}"
+        dst = out / "SUBSET_4" / dataset / "images" / row["orig_file"]
+        if dst.is_file() and not overwrite:
+            stats = _add(stats, skipped=1)
+            continue
         s3_row = s3.get(rel_rfc)
         if s3_row is None:
             stats = _add(stats, missing_manifest=1)
@@ -51,11 +83,10 @@ def build_subset4(dataset: str, subset0: Path, out: Path, overwrite: bool = Fals
             stats = _add(stats, missing_manifest=1)
             continue
         try:
-            crop = replay_bilateral_crop(subset0, s1_row, s3_row)
-            dst = out / "SUBSET_4" / dataset / "images" / row["orig_file"]
-            save_jpeg(crop, dst, overwrite=overwrite)
-            stats = _add(stats, written=1)
-        except FileNotFoundError:
+            with replay_bilateral_crop(subset0, s1_row, s3_row) as crop:
+                written = save_jpeg(crop, dst, overwrite=overwrite)
+            stats = _add(stats, **{"written" if written else "skipped": 1})
+        except MissingSourceError:
             stats = _add(stats, missing_source=1)
         except Exception:
             stats = _add(stats, failed=1)
@@ -66,31 +97,33 @@ def build_subset5(dataset: str, subset0: Path, out: Path, overwrite: bool = Fals
     target_rel = target_s5_relpaths(dataset)
     s3, s1 = _prepare_crop_maps(dataset, target_rel)
     split_rows = load_split_rows(dataset)
-    stats = BuildStats(dataset=dataset, expected=2 * len(target_rel))
-    crop_cache = {}
+    stats = BuildStats(dataset=dataset, expected=len(split_rows))
 
-    for unilateral_rel, split_row in split_rows.items():
-        s3_row = s3.get(normalize_rel(split_row["rel_src"]))
-        if s3_row is None:
-            stats = _add(stats, missing_manifest=1)
-            continue
-        s1_row = s1.get(normalize_rel(s3_row["rel_key_r"]))
-        if s1_row is None:
-            stats = _add(stats, missing_manifest=1)
-            continue
-        side = "OD" if unilateral_rel.endswith("_OD.jpg") else "OS"
-        try:
-            crop_key = normalize_rel(split_row["rel_src"])
-            if crop_key not in crop_cache:
-                crop_cache[crop_key] = replay_bilateral_crop(subset0, s1_row, s3_row)
-            crop = crop_cache[crop_key]
-            eye = split_eye(crop, side, int(split_row.get("mid") or -1))
-            save_jpeg(eye, out / "SUBSET_5" / unilateral_rel, overwrite=overwrite)
-            stats = _add(stats, written=1)
-        except FileNotFoundError:
-            stats = _add(stats, missing_source=1)
-        except Exception:
-            stats = _add(stats, failed=1)
+    with _CropCache() as crop_cache:
+        for unilateral_rel, split_row in split_rows.items():
+            dst = out / "SUBSET_5" / unilateral_rel
+            if dst.is_file() and not overwrite:
+                stats = _add(stats, skipped=1)
+                continue
+            s3_row = s3.get(normalize_rel(split_row["rel_src"]))
+            if s3_row is None:
+                stats = _add(stats, missing_manifest=1)
+                continue
+            s1_row = s1.get(normalize_rel(s3_row["rel_key_r"]))
+            if s1_row is None:
+                stats = _add(stats, missing_manifest=1)
+                continue
+            side = "OD" if unilateral_rel.endswith("_OD.jpg") else "OS"
+            try:
+                crop_key = normalize_rel(split_row["rel_src"])
+                crop = crop_cache.get(crop_key, subset0, s1_row, s3_row)
+                with split_eye(crop, side, int(split_row.get("mid") or -1)) as eye:
+                    written = save_jpeg(eye, dst, overwrite=overwrite)
+                stats = _add(stats, **{"written" if written else "skipped": 1})
+            except MissingSourceError:
+                stats = _add(stats, missing_source=1)
+            except Exception:
+                stats = _add(stats, failed=1)
     return stats
 
 
@@ -119,40 +152,41 @@ def build_resized_subset(
     target_bilateral = {normalize_rel(row["rel_src"]) for row in split_rows.values()}
     s3, s1 = _prepare_crop_maps(dataset, target_bilateral)
     stats = BuildStats(dataset=dataset, expected=len(targets))
-    crop_cache = {}
 
     size = S6_SIZE if subset == "S6" else S7_SIZE
     out_subset = "SUBSET_6" if subset == "S6" else "SUBSET_7"
     rel_col = "s6_rel" if subset == "S6" else "s7_rel"
 
-    for row in targets:
-        unilateral_rel = f"{dataset}/{normalize_rel(row['src_rel'])}"
-        split_row = split_rows.get(unilateral_rel)
-        if split_row is None:
-            stats = _add(stats, missing_manifest=1)
-            continue
-        s3_row = s3.get(normalize_rel(split_row["rel_src"]))
-        if s3_row is None:
-            stats = _add(stats, missing_manifest=1)
-            continue
-        s1_row = s1.get(normalize_rel(s3_row["rel_key_r"]))
-        if s1_row is None:
-            stats = _add(stats, missing_manifest=1)
-            continue
-        side = "OD" if unilateral_rel.endswith("_OD.jpg") else "OS"
-        try:
-            crop_key = normalize_rel(split_row["rel_src"])
-            if crop_key not in crop_cache:
-                crop_cache[crop_key] = replay_bilateral_crop(subset0, s1_row, s3_row)
-            crop = crop_cache[crop_key]
-            eye = split_eye(crop, side, int(split_row.get("mid") or -1))
+    with _CropCache() as crop_cache:
+        for row in targets:
             dst = out / out_subset / dataset / normalize_rel(row[rel_col])
-            save_square_jpeg(eye, dst, size, overwrite=overwrite)
-            stats = _add(stats, written=1)
-        except FileNotFoundError:
-            stats = _add(stats, missing_source=1)
-        except Exception:
-            stats = _add(stats, failed=1)
+            if dst.is_file() and not overwrite:
+                stats = _add(stats, skipped=1)
+                continue
+            unilateral_rel = f"{dataset}/{normalize_rel(row['src_rel'])}"
+            split_row = split_rows.get(unilateral_rel)
+            if split_row is None:
+                stats = _add(stats, missing_manifest=1)
+                continue
+            s3_row = s3.get(normalize_rel(split_row["rel_src"]))
+            if s3_row is None:
+                stats = _add(stats, missing_manifest=1)
+                continue
+            s1_row = s1.get(normalize_rel(s3_row["rel_key_r"]))
+            if s1_row is None:
+                stats = _add(stats, missing_manifest=1)
+                continue
+            side = "OD" if unilateral_rel.endswith("_OD.jpg") else "OS"
+            try:
+                crop_key = normalize_rel(split_row["rel_src"])
+                crop = crop_cache.get(crop_key, subset0, s1_row, s3_row)
+                with split_eye(crop, side, int(split_row.get("mid") or -1)) as eye:
+                    written = save_square_jpeg(eye, dst, size, overwrite=overwrite)
+                stats = _add(stats, **{"written" if written else "skipped": 1})
+            except MissingSourceError:
+                stats = _add(stats, missing_source=1)
+            except Exception:
+                stats = _add(stats, failed=1)
     return stats
 
 
