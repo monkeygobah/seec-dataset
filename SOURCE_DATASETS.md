@@ -32,9 +32,9 @@ Follow each provider's license, access, and citation requirements. Use alignment
 
 ## Release Files
 
-The reconstruction archive contains SEEC processing records used to rebuild the corpus, including alignment, cropping, splitting, resizing, and dataset membership information. It does not include source images. The archive also contains legacy SUBSET_4 measurement files from earlier development. These are not part of the submitted benchmark and are not required for benchmark reproduction.
+## Release files
 
-The checkpoint archive contains 36 SEEC-trained models. Eighteen were trained from random initialization and eighteen used ImageNet-pretrained initialization. DINOv2 and MAE checkpoints are not redistributed by SEEC. Source-dataset terms continue to apply to the original images and reconstructed crops. The repository MIT license applies to the software, not to source images or externally hosted release files.
+The reconstruction archive contains SEEC processing records used to rebuild the corpus, including alignment, cropping, splitting, resizing, and dataset membership information. It does not include source images. The archive also contains legacy SUBSET_4 measurement files from earlier development. These are not part of the submitted benchmark and are not required for benchmark reproduction. The checkpoint archive contains 36 SEEC-trained models. Eighteen were trained from random initialization and eighteen used ImageNet-pretrained initialization. DINOv2 and MAE checkpoints are not redistributed by SEEC.
 
 ## Intended use and identifiability
 
