@@ -35,7 +35,7 @@ Avoid an extra archive folder or `data/data/` nesting. SUBSET_6/7 use only the a
 
 ## 3. Arrange source images in SUBSET_0
 
-1. Obtain the source datasets you are permitted to use from the providers listed in [Provenance and Licensing](PROVENANCE_AND_LICENSE.md). You can reconstruct only the datasets you have; select them with `--datasets` in step 4.
+1. Obtain the source datasets you are permitted to use from the providers listed in [Provenance and Licensing](SOURCE_DATASETS.md). You can reconstruct only the datasets you have; select them with `--datasets` in step 4.
 2. Create a source-image folder called `SUBSET_0` anywhere on your computer. Inside it, use the dataset keys from the manifests, such as `celeb`, `cfd`, or `ffhq`.
 3. Place each source image at `SUBSET_0/<rel_src>`, where `rel_src` is recorded in `data/manifests/subset1_alignment/subset1_{dataset}.csv` or `.csv.gz`. Keep any subdirectories in that path.
 
