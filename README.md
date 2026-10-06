@@ -69,7 +69,7 @@ Use the matching source-image edition and dimensions: `rot_old_w` and `rot_old_h
 
 These are examples, not a complete file list. Preserve the matching input pixels when arranging files; resizing or cropping them changes the coordinates used for reconstruction.
 
-If your download uses different filenames or an array/archive format, it must first be matched to the manifest's image identities and exported in the corresponding image form. This toolkit provides no downloaders, conversion recipes, or original-to-prepared filename maps. A file renamed to an expected name is usable only if it is the corresponding source image; matching the name alone is insufficient.
+If your download uses different filenames or an array/archive format, it must first be matched to the manifest's image identities and exported in the corresponding image form. This toolkit provides no downloaders, conversion recipes, or original-to-prepared filename maps. 
 
 ## 4. Reconstruct 224 or 512 images
 
