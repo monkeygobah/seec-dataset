@@ -1,8 +1,8 @@
 # SEEC Dataset Reconstruction Toolkit
 
-SEEC (Standardized External-Eye Corpus) supports external-eye/periocular representation learning and benchmarking. This toolkit reconstructs its **224 x 224 unilateral images (SUBSET_6)** and eligible **512 x 512 images (SUBSET_7)** from permitted local source images and released manifests.
+SEEC (Standardized External-Eye Corpus) was designed for external-eye/periocular representation learning and benchmarking. This toolkit reconstructs its **224 x 224 unilateral images (SUBSET_6)** and eligible **512 x 512 images (SUBSET_7)** from permitted local source images and released manifests.
 
-Original images, reconstructed crops, and restricted clinical cohorts are not bundled. The tools replay recorded transformations and membership; they do not rerun landmark detection or CNN filtering.
+Original images, reconstructed crops, and restricted clinical cohorts are not bundled. The tools replay recorded transformations and do not rerun landmark detection or CNN filtering.
 
 ## 1. Install
 
