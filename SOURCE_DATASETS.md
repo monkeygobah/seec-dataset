@@ -1,10 +1,10 @@
-# Provenance, licensing, and use
+# Source datasets and release terms
 
 ## Software and artifact scope
 
 The toolkit code and documentation are released under the [MIT License](LICENSE). This grant does not cover source images, reconstructed crops, or externally hosted artifacts.
 
-Source-image terms continue to apply to originals and reconstructed crops. The reconstruction manifest archive does not grant permission to download, use, or redistribute source images. Software licensing also does not determine permissions for externally hosted manifests or legacy metadata.
+Source-image terms continue to apply to originals and reconstructed crops. The reconstruction manifest archive does not grant permission to download, use, or redistribute source images. The MIT license does not apply to externally hosted manifests or legacy metadata.
 
 This toolkit bundles no source images, derived crops, or restricted clinical cohorts. Clinical benchmark results cannot be publicly reproduced using this release alone.
 
@@ -29,6 +29,12 @@ These are the source references already recorded by the toolkit. They are not a 
 | `morph`    | MORPH (Academic)                        | [Existing access reference](https://omen.cs.uni-magdeburg.de/disclaimer/index.php)                          |
 
 Follow each provider's license, access, and citation requirements. Use alignment-manifest `rel_src` paths to arrange local files; no additional per-source preparation recipes are supplied here.
+
+## Release Files
+
+The reconstruction archive contains SEEC processing records used to rebuild the corpus, including alignment, cropping, splitting, resizing, and dataset membership information. It does not include source images. The archive also contains legacy SUBSET_4 measurement files from earlier development. These are not part of the submitted benchmark and are not required for benchmark reproduction.
+
+The checkpoint archive contains 36 SEEC-trained models. Eighteen were trained from random initialization and eighteen used ImageNet-pretrained initialization. DINOv2 and MAE checkpoints are not redistributed by SEEC. Source-dataset terms continue to apply to the original images and reconstructed crops. The repository MIT license applies to the software, not to source images or externally hosted release files.
 
 ## Intended use and identifiability
 
