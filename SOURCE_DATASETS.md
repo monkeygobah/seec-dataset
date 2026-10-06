@@ -4,7 +4,7 @@
 
 The toolkit code and documentation are released under the [MIT License](LICENSE). This grant does not cover source images, reconstructed crops, or externally hosted artifacts.
 
-Source-image terms continue to apply to originals and reconstructed crops. The reconstruction manifest archive does not grant permission to download, use, or redistribute source images. Software licensing also does not determine permissions for externally hosted manifests or legacy metadata; 
+Source-image terms continue to apply to originals and reconstructed crops. The reconstruction manifest archive does not grant permission to download, use, or redistribute source images. Software licensing also does not determine permissions for externally hosted manifests or legacy metadata.
 
 This toolkit bundles no source images, derived crops, or restricted clinical cohorts. Clinical benchmark results cannot be publicly reproduced using this release alone.
 
