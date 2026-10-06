@@ -33,18 +33,43 @@ data/
 
 Avoid an extra archive folder or `data/data/` nesting. SUBSET_6/7 use only the alignment, bilateral-crop, unilateral-split, and resize manifests. Measurement metadata is unnecessary for these builds. See [Manifest Schema](MANIFEST_SCHEMA.md).
 
-## 3. Arrange permitted source images
+## 3. Arrange source images in SUBSET_0
 
-Obtain the datasets you are permitted to use; see [source references and licensing scope](PROVENANCE_AND_LICENSE.md).
+1. Obtain the source datasets you are permitted to use from the providers listed in [Provenance and Licensing](PROVENANCE_AND_LICENSE.md). You can reconstruct only the datasets you have; select them with `--datasets` in step 4.
+2. Create a source-image folder called `SUBSET_0` anywhere on your computer. Inside it, use the dataset keys from the manifests, such as `celeb`, `cfd`, or `ffhq`.
+3. Place each source image at `SUBSET_0/<rel_src>`, where `rel_src` is recorded in `data/manifests/subset1_alignment/subset1_{dataset}.csv` or `.csv.gz`. Keep any subdirectories in that path.
 
-Each alignment manifest's `rel_src` gives the exact input path relative to your `SUBSET_0` root. For example, `celeb/000001.jpg` requires:
+For example, these real manifest entries require:
 
 ```text
 SUBSET_0/
   celeb/000001.jpg
+  cfd/CFD-AF-200-228-N.jpg
+  ffhq/00000.png
 ```
 
-Match the recorded filenames and any subdirectories. Use the corresponding source images; matching filenames alone does not establish compatibility with recorded crop coordinates. This repository supplies no downloaders or source-specific extraction/conversion recipes.
+Pass the parent `SUBSET_0` folder to `--subset0`, rather than an individual dataset folder. For example, a CelebA-only build uses `--subset0 /path/to/SUBSET_0 --datasets celeb`.
+
+To inspect the first five usable source paths for a dataset, run this from the toolkit root after extracting the manifests. Replace `celeb` with your dataset key:
+
+```bash
+python -c "from itertools import islice; from seec_dataset.io import csv_rows; from seec_dataset.replay import s1_log; rows = (r for r in csv_rows(s1_log('celeb')) if r['status'] == 'OK'); print('\n'.join(r['rel_src'] for r in islice(rows, 5)))"
+```
+
+Use the matching source-image edition and dimensions: `rot_old_w` and `rot_old_h` record the expected input width and height. Example entries are:
+
+| Dataset key | Expected source path | Input pixels |
+|---|---|---|
+| `celeb` | `celeb/000001.jpg` | 178 x 218 |
+| `cfd` | `cfd/CFD-AF-200-228-N.jpg` | 2444 x 1718 |
+| `ffhq` | `ffhq/00000.png` | 1024 x 1024 |
+| `fiml` | `fiml/fiml_00000000.jpg` | 512 x 512 |
+| `umd` | `umd/umd_00000000.jpg` | 256 x 256 |
+| `vgg` | `vgg/0.jpg` | 112 x 112 |
+
+These are examples, not a complete file list. Preserve the matching input pixels when arranging files; resizing or cropping them changes the coordinates used for reconstruction.
+
+If your download uses different filenames or an array/archive format, it must first be matched to the manifest's image identities and exported in the corresponding image form. This toolkit provides no downloaders, conversion recipes, or original-to-prepared filename maps. A file renamed to an expected name is usable only if it is the corresponding source image; matching the name alone is insufficient.
 
 ## 4. Reconstruct 224 or 512 images
 
