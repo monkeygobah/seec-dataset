@@ -10,8 +10,7 @@ This toolkit bundles no source images, derived crops, or restricted clinical coh
 
 ## Source references
 
-These are the source references already recorded by the toolkit. They are not a guarantee that a download is currently available or matches the manifest's source version. VGGFace2 and UMDFaces links point to third-party distributions; confirm provenance and permissions with the relevant provider.
-
+These are the source references already recorded by the toolkit. They are not a guarantee that a download is currently available or matches the manifest's source version.
 | Manifest key | Dataset                                 | Reference                                                                                                  |
 | ------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `celeb`    | CelebA                                  | [Project](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)                                                |
